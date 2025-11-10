@@ -1,6 +1,6 @@
 name = "arsynox-mail"
 main = "worker.js"
-compatibility_date = "2025-11-11"
+compatibility_date = "2023-05-18"
 
 # Add this section
 [build]
