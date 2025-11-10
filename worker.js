@@ -42,8 +42,8 @@ async function handleRequest(request) {
     }
     
     // ROUTE 2: Serve the Frontend (Static Page).
-    // If the user visits the root URL, serve the index.html file.
-    if (url.pathname === '/') {
+    // If the user visits the root URL OR the explicit /index.html path, serve the index.html file.
+    if (url.pathname === '/' || url.pathname === '/index.html') {
         return serveFrontend();
     }
     
