@@ -122,7 +122,8 @@ async function handleGenerateEmail() {
         console.log('Attempting to create a new temporary email with api.mail.tm...');
         
         // Step 1: Get a list of available domains
-        const domainsResponse = await fetch(`${MAIL_TM_API_BASE_URL}/v1/domains`);
+        // THE FIX: The correct endpoint is /domains, not /v1/domains
+        const domainsResponse = await fetch(`${MAIL_TM_API_BASE_URL}/domains`);
         if (!domainsResponse.ok) {
             throw new Error(`Failed to fetch domains: ${domainsResponse.status} ${domainsResponse.statusText}`);
         }
