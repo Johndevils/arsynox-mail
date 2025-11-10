@@ -41,9 +41,9 @@ async function handleRequest(request) {
         return handleCORS();
     }
     
-    // ROUTE 2: Serve the Frontend (Static Page).
-    // If the user visits the root URL OR the explicit /index.html path, serve the index.html file.
-    if (url.pathname === '/' || url.pathname === '/index.html') {
+    // ROUTE 2: Serve the Frontend ONLY at the /index.html path.
+    // This is the ONLY path that will serve the HTML file.
+    if (url.pathname === '/index.html') {
         return serveFrontend();
     }
     
@@ -53,7 +53,7 @@ async function handleRequest(request) {
         return handleApiRoute(request, url);
     }
     
-    // ROUTE 4: Fallback for unknown paths.
+    // ROUTE 4: Fallback for all other paths, including the root "/".
     // If no route matches, return a 404 Not Found error.
     return new Response('Not Found', { status: 404 });
 }
