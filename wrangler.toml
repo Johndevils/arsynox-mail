@@ -1,0 +1,31 @@
+# The name of your worker. This will be part of the final URL: 
+# your-worker-name.your-subdomain.workers.dev
+name = "arsynox-mail"
+
+# The entry point for your Worker's code.
+main = "worker.js"
+
+# The date your Worker is compatible with. This ensures your Worker
+# uses the correct runtime API features.
+compatibility_date = "2023-05-18"
+
+# This section defines environment variables. It's the most secure
+# way to store secrets like API keys.
+[vars]
+# IMPORTANT: Replace the placeholder with your actual MailSlurp API key.
+# You can also set this using the command line for better security:
+# wrangler secret put MAILSLURP_API_KEY
+MAILSLURP_API_KEY = "your-mailslurp-api-key-here"
+
+# You can define different environments, like staging and production.
+# The [env.production] block below shows how you might set a variable
+# specifically for the production environment.
+[env.production]
+# Example of an environment-specific variable
+# ENVIRONMENT = "production"
+
+# If you were using a custom domain with Cloudflare, you would
+# configure it here. Uncomment and modify if needed.
+# [env.production.routes]
+# pattern = "tempmail.yourdomain.com/*"
+# zone_name = "yourdomain.com"
