@@ -1,4 +1,4 @@
-name = "arsynox-mail"
+name = "arsynoxmail"
 main = "worker.js"
 compatibility_date = "2023-05-18"
 
