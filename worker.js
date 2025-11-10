@@ -2,12 +2,9 @@
 // This line must be at the top level of the module.
 import indexHTML from './index.html';
 
-// Configuration for MailSlurp API
-// IMPORTANT: Replace with your actual API key when deploying.
-// For production, it's highly recommended to use Wrangler secrets:
-// wrangler secret put MAILSLURP_API_KEY
-const MAILSLURP_API_KEY = MAILSLURP_API_KEY; // Reads from environment/secrets
-const MAILSLURP_API_BASE_URL = 'https://api.mailslurp.com';
+// Configuration for api.mail.tm
+// This API does not require an API key for basic usage.
+const MAIL_TM_API_BASE_URL = 'https://api.mail.tm';
 
 // Cache configuration for static assets
 const CACHE_TTL = 30; // seconds
@@ -36,25 +33,21 @@ async function handleRequest(request) {
     const url = new URL(request.url);
     
     // ROUTE 1: Handle CORS preflight requests.
-    // Browsers send these before making cross-origin API calls.
     if (request.method === 'OPTIONS') {
         return handleCORS();
     }
     
     // ROUTE 2: Serve the Frontend ONLY at the /index.html path.
-    // This is the ONLY path that will serve the HTML file.
     if (url.pathname === '/index.html') {
         return serveFrontend();
     }
     
     // ROUTE 3: Handle API Endpoints.
-    // These routes handle the backend logic for the application.
     if (url.pathname.startsWith('/api/')) {
         return handleApiRoute(request, url);
     }
     
     // ROUTE 4: Fallback for all other paths, including the root "/".
-    // If no route matches, return a 404 Not Found error.
     return new Response('Not Found', { status: 404 });
 }
 
@@ -65,23 +58,18 @@ async function handleRequest(request) {
  * @returns {Promise<Response>} - The response from the specific API handler.
  */
 function handleApiRoute(request, url) {
-    // API Route for generating a new temporary email.
     if (url.pathname === '/api/new' && request.method === 'GET') {
         return handleGenerateEmail();
     }
     
-    // API Route for fetching emails for a specific inbox.
-    // It requires an 'inboxId' query parameter.
     if (url.pathname === '/api/inbox' && request.method === 'GET') {
         const inboxId = url.searchParams.get('inboxId');
         if (!inboxId) {
-            // If the required parameter is missing, return a 400 Bad Request error.
-            return jsonResponse({ error: 'Inbox ID parameter is required' }, 400);
+            return jsonResponse({ error: 'Inbox ID (token) parameter is required' }, 400);
         }
         return handleGetInbox(inboxId);
     }
     
-    // If the path starts with /api/ but doesn't match any known API route, return 404.
     return new Response('API endpoint not found', { status: 404 });
 }
 
@@ -126,93 +114,118 @@ function handleCORS() {
 }
 
 /**
- * Generates a new temporary email address using the MailSlurp API.
- * Includes enhanced logging for debugging.
- * @returns {Promise<Response>} - A JSON response containing the new email and inbox ID.
+ * Generates a new temporary email address using the api.mail.tm API.
+ * @returns {Promise<Response>} - A JSON response containing the new email and inbox token.
  */
 async function handleGenerateEmail() {
-    // First, check if the API key is set
-    if (!MAILSLURP_API_KEY || MAILSLURP_API_KEY === 'your-mailslurp-api-key-here') {
-        console.error('MailSlurp API key is not configured.');
-        return jsonResponse({ error: 'Server configuration error: API key is missing.' }, 500);
-    }
-
     try {
-        console.log('Attempting to create inbox with MailSlurp API...');
-        const response = await fetch(`${MAILSLURP_API_BASE_URL}/inboxes`, {
-            method: 'POST',
-            headers: {
-                'x-api-key': MAILSLURP_API_KEY,
-                'Content-Type': 'application/json'
-            }
-        });
+        console.log('Attempting to create a new temporary email with api.mail.tm...');
         
-        // Log the response status for debugging
-        console.log(`MailSlurp API response status: ${response.status} ${response.statusText}`);
-        
-        if (!response.ok) {
-            // Try to get more error details from the response body
-            const errorBody = await response.text();
-            console.error(`MailSlurp API Error Body: ${errorBody}`);
-            throw new Error(`MailSlurp API error: ${response.status} ${response.statusText}. Body: ${errorBody}`);
+        // Step 1: Get a list of available domains
+        const domainsResponse = await fetch(`${MAIL_TM_API_BASE_URL}/v1/domains`);
+        if (!domainsResponse.ok) {
+            throw new Error(`Failed to fetch domains: ${domainsResponse.status} ${domainsResponse.statusText}`);
         }
-        
-        const data = await response.json();
-        const email = data.emailAddress;
-        const inboxId = data.id;
+        const { hyphenated: domains } = await domainsResponse.json();
+        if (!domains || domains.length === 0) {
+            throw new Error('No available domains from api.mail.tm.');
+        }
+        const randomDomain = domains[Math.floor(Math.random() * domains.length)];
 
-        console.log(`Successfully created inbox: ${email} with ID: ${inboxId}`);
+        // Step 2: Create a new account (inbox)
+        const accountResponse = await fetch(`${MAIL_TM_API_BASE_URL}/v1/accounts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                address: `user-${Math.random().toString(36).substring(2, 8)}`,
+                domain: randomDomain
+            })
+        });
+
+        if (!accountResponse.ok) {
+            const errorBody = await accountResponse.text();
+            console.error(`api.mail.tm Account Creation Error Body: ${errorBody}`);
+            throw new Error(`Failed to create account: ${accountResponse.status} ${accountResponse.statusText}. Body: ${errorBody}`);
+        }
+
+        const accountData = await accountResponse.json();
         
-        return jsonResponse({ email, inboxId }, 200, { 'Cache-Control': 'no-store' });
+        // Step 3: Get the JWT token for the account to fetch messages
+        const authResponse = await fetch(`${MAIL_TM_API_BASE_URL}/v1/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                address: accountData.address,
+                password: accountData.password
+            })
+        });
+
+        if (!authResponse.ok) {
+            throw new Error(`Failed to authenticate new account: ${authResponse.status} ${authResponse.statusText}`);
+        }
+
+        const { token } = await authResponse.json();
+
+        console.log(`Successfully created inbox: ${accountData.address} with token: ${token}`);
+
+        return jsonResponse({ 
+            email: accountData.address, 
+            inboxId: token // Use the JWT token as the inboxId for fetching
+        }, 200, { 'Cache-Control': 'no-store' });
+
     } catch (error) {
         console.error('Error generating email:', error);
-        // Return the specific error message to the client for easier debugging
         return jsonResponse({ error: error.message }, 500);
     }
 }
 
 /**
- * Fetches emails for a specific inbox using the MailSlurp API.
- * @param {string} inboxId - The ID of the inbox to check.
+ * Fetches emails for a specific inbox using the api.mail.tm API.
+ * @param {string} inboxId - The JWT token of the inbox to check.
  * @returns {Promise<Response>} - A JSON response containing the list of emails.
  */
 async function handleGetInbox(inboxId) {
     try {
-        const response = await fetch(`${MAILSLURP_API_BASE_URL}/inboxes/${inboxId}/emails`, {
+        console.log(`Fetching messages for inboxId (token): ${inboxId.substring(0, 10)}...`);
+        
+        const response = await fetch(`${MAIL_TM_API_BASE_URL}/v1/messages`, {
             method: 'GET',
-            headers: { 'x-api-key': MAILSLURP_API_KEY }
+            headers: { 'Authorization': `Bearer ${inboxId}` }
         });
         
         if (!response.ok) {
-            throw new Error(`MailSlurp API error: ${response.status} ${response.statusText}`);
+            const errorBody = await response.text();
+            console.error(`api.mail.tm Fetch Messages Error Body: ${errorBody}`);
+            throw new Error(`Failed to fetch messages: ${response.status} ${response.statusText}. Body: ${errorBody}`);
         }
         
-        const emails = await response.json();
+        const messages = await response.json();
         
-        const processedEmails = await Promise.all(emails.map(async (email) => {
+        // The api.mail.tm message list doesn't include body content, so we need to fetch each one.
+        const processedEmails = await Promise.all(messages.map(async (message) => {
             try {
-                const emailResponse = await fetch(`${MAILSLURP_API_BASE_URL}/emails/${email.id}`, {
+                const messageResponse = await fetch(`${MAIL_TM_API_BASE_URL}/v1/messages/${message.id}`, {
                     method: 'GET',
-                    headers: { 'x-api-key': MAILSLURP_API_KEY }
+                    headers: { 'Authorization': `Bearer ${inboxId}` }
                 });
-                
-                if (emailResponse.ok) {
-                    const fullEmail = await emailResponse.json();
+
+                if (messageResponse.ok) {
+                    const fullEmail = await messageResponse.json();
                     return {
-                        id: email.id,
+                        id: fullEmail.id,
                         from: fullEmail.from || 'Unknown Sender',
                         subject: fullEmail.subject || 'No Subject',
-                        body: fullEmail.body || 'No content',
-                        bodyPreview: fullEmail.body?.substring(0, 100) || 'No preview',
+                        body: fullEmail.text || fullEmail.html || 'No content',
+                        bodyPreview: (fullEmail.text || fullEmail.html || 'No content').substring(0, 100),
                         isHTML: !!fullEmail.html,
-                        createdAt: email.createdAt
+                        createdAt: fullEmail.createdAt
                     };
                 } else {
-                    return createFallbackEmail(email);
+                    return createFallbackEmail(message);
                 }
             } catch (error) {
                 console.error('Error fetching email details:', error);
-                return createFallbackEmail(email);
+                return createFallbackEmail(message);
             }
         }));
         
