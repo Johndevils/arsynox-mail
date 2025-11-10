@@ -6,7 +6,7 @@ import indexHTML from './index.html';
 // IMPORTANT: Replace with your actual API key when deploying.
 // For production, it's highly recommended to use Wrangler secrets:
 // wrangler secret put MAILSLURP_API_KEY
-const MAILSLURP_API_KEY = 'your-mailslurp-api-key-here'; 
+const MAILSLURP_API_KEY = MAILSLURP_API_KEY; // Reads from environment/secrets
 const MAILSLURP_API_BASE_URL = 'https://api.mailslurp.com';
 
 // Cache configuration for static assets
@@ -127,10 +127,18 @@ function handleCORS() {
 
 /**
  * Generates a new temporary email address using the MailSlurp API.
+ * Includes enhanced logging for debugging.
  * @returns {Promise<Response>} - A JSON response containing the new email and inbox ID.
  */
 async function handleGenerateEmail() {
+    // First, check if the API key is set
+    if (!MAILSLURP_API_KEY || MAILSLURP_API_KEY === 'your-mailslurp-api-key-here') {
+        console.error('MailSlurp API key is not configured.');
+        return jsonResponse({ error: 'Server configuration error: API key is missing.' }, 500);
+    }
+
     try {
+        console.log('Attempting to create inbox with MailSlurp API...');
         const response = await fetch(`${MAILSLURP_API_BASE_URL}/inboxes`, {
             method: 'POST',
             headers: {
@@ -139,18 +147,27 @@ async function handleGenerateEmail() {
             }
         });
         
+        // Log the response status for debugging
+        console.log(`MailSlurp API response status: ${response.status} ${response.statusText}`);
+        
         if (!response.ok) {
-            throw new Error(`MailSlurp API error: ${response.status} ${response.statusText}`);
+            // Try to get more error details from the response body
+            const errorBody = await response.text();
+            console.error(`MailSlurp API Error Body: ${errorBody}`);
+            throw new Error(`MailSlurp API error: ${response.status} ${response.statusText}. Body: ${errorBody}`);
         }
         
         const data = await response.json();
         const email = data.emailAddress;
         const inboxId = data.id;
+
+        console.log(`Successfully created inbox: ${email} with ID: ${inboxId}`);
         
         return jsonResponse({ email, inboxId }, 200, { 'Cache-Control': 'no-store' });
     } catch (error) {
         console.error('Error generating email:', error);
-        return jsonResponse({ error: 'Failed to generate email address' }, 500);
+        // Return the specific error message to the client for easier debugging
+        return jsonResponse({ error: error.message }, 500);
     }
 }
 
