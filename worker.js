@@ -122,13 +122,18 @@ async function handleGenerateEmail() {
         console.log('Attempting to create a new temporary email with api.mail.tm...');
         
         // Step 1: Get a list of available domains
-        // THE FIX: The correct endpoint is /domains, not /v1/domains
         const domainsResponse = await fetch(`${MAIL_TM_API_BASE_URL}/domains`);
         if (!domainsResponse.ok) {
             throw new Error(`Failed to fetch domains: ${domainsResponse.status} ${domainsResponse.statusText}`);
         }
-        const { hyphenated: domains } = await domainsResponse.json();
-        if (!domains || domains.length === 0) {
+        
+        // FIX: Handle the API response more robustly
+        const domainsData = await domainsResponse.json();
+        const domains = domainsData.hyphenated || domainsData; // Fallback to main object if hyphenated is not present
+
+        if (!domains || !Array.isArray(domains) || domains.length === 0) {
+            // Log the actual response from the API to help debug further if needed
+            console.error('Domains response from API:', JSON.stringify(domainsData)); 
             throw new Error('No available domains from api.mail.tm.');
         }
         const randomDomain = domains[Math.floor(Math.random() * domains.length)];
