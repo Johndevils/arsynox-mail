@@ -2,10 +2,9 @@ name = "arsynoxmail"
 main = "worker.js"
 compatibility_date = "2023-05-18"
 
-# Add this section
 [build]
-command = "" # No build command needed for this simple import
+command = ""
 
-# Your secrets and vars
-[vars]
-MAILSLURP_API_KEY = "your-mailslurp-api-key-here"
+# You can remove the [vars] section entirely or leave it empty
+# [vars]
+# MAILSLURP_API_KEY is no longer needed
