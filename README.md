@@ -3,13 +3,13 @@
 A modern, serverless temporary email service built entirely on Cloudflare Workers. It provides a clean, responsive interface for generating disposable email addresses and viewing incoming emails, all without any traditional server hosting.
 
 ![Arsynox Mail](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white)
-![MailSlurp](https://img.shields.io/badge/Powered%20By-MailSlurp-blue?style=for-the-badge)
+![api.mail.tm](https://img.shields.io/badge/Powered%20By-api.mail.tm-blue?style=for-the-badge)
 
 
 ## ✨ Features
 
 - **🚀 Serverless Architecture**: Runs entirely on Cloudflare's global edge network for minimal latency and high availability.
-- **🔐 Real Email Addresses**: Integrates with the MailSlurp API to provide real, functional temporary email inboxes.
+- **🔐 Real Email Addresses**: Integrates with the free `api.mail.tm` service to provide real, functional temporary email inboxes.
 - **📱 Responsive Design**: Built with Tailwind CSS for a clean, modern UI that works perfectly on desktop and mobile devices.
 - **⚡ Instant Email Viewing**: Automatically fetches and displays new emails in real-time.
 - **📋 Easy Copy-to-Clipboard**: One-click copying of your temporary email address.
@@ -20,7 +20,7 @@ A modern, serverless temporary email service built entirely on Cloudflare Worker
 
 - **Frontend**: HTML5, Tailwind CSS (via CDN), Vanilla JavaScript
 - **Backend**: Cloudflare Workers (JavaScript ES Modules)
-- **API**: MailSlurp for temporary email functionality
+- **API**: `api.mail.tm` for temporary email functionality
 - **Deployment**: Cloudflare Wrangler CLI
 
 ## 📋 Prerequisites
@@ -30,7 +30,8 @@ Before you begin, ensure you have the following installed:
 - [Node.js](https://nodejs.org/) (version 16 or later)
 - [Cloudflare Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
 - A [Cloudflare account](https://www.cloudflare.com/)
-- A [MailSlurp account](https://www.mailslurp.com/) and an API key
+
+> **Note**: This project uses `api.mail.tm`, which does not require an API key for basic usage, simplifying the setup process.
 
 ## 🚀 Deployment Guide
 
@@ -40,7 +41,8 @@ Follow these steps to deploy Arsynox Mail to your own Cloudflare Workers account
 
 Ensure you have the following files in your project directory:
 
-- `worker.js`: The main application logic.
+- `worker.js`: The main application logic, configured for `api.mail.tm`.
+- `index.html`: The frontend file.
 - `wrangler.toml`: The configuration file for Wrangler.
 - `README.md`: This file.
 
@@ -52,37 +54,28 @@ If you haven't already, install the Wrangler CLI globally using npm:
 npm install -g wrangler
 ```
 
-### Step 3: Authenticate with Cloudflare
+### Step 3: Configure `wrangler.toml`
+
+Your `wrangler.toml` file is very simple since no API key is needed. It should look like this:
+
+```toml
+name = "arsynox-mail"
+main = "worker.js"
+compatibility_date = "2023-05-18"
+
+# This section is required for the worker to import the index.html file.
+[build]
+command = "" # No build command is needed for this simple setup.
+```
+
+> **Note**: The `api.mail.tm` integration does not use any secrets or environment variables, so there is no `[vars]` section needed.
+
+### Step 4: Authenticate with Cloudflare
 
 Log in to your Cloudflare account through the Wrangler CLI. This will open a browser window to complete the authentication process.
 
 ```bash
 wrangler login
-```
-
-### Step 4: Configure Your MailSlurp API Key
-
-This is the most critical step. The worker needs your MailSlurp API key to create inboxes and fetch emails.
-
-**Option A: Using Wrangler Secrets (Highly Recommended for Production)**
-
-This is the most secure method. It encrypts your API key and stores it safely in Cloudflare.
-
-```bash
-wrangler secret put MAILSLURP_API_KEY
-```
-
-You will be prompted to enter your API key. Paste it and press Enter. Wrangler will securely upload and encrypt it.
-
-**Option B: Using `wrangler.toml` (For Local Testing Only)**
-
-> **Warning**: This method stores your API key in plain text. Do not use this for production or commit the file with the key to a public repository.
-
-Open the `wrangler.toml` file and replace the placeholder:
-
-```toml
-[vars]
-MAILSLURP_API_KEY = "your-actual-mailslurp-api-key-here"
 ```
 
 ### Step 5: Deploy the Worker
@@ -93,7 +86,7 @@ You are now ready to deploy! Run the publish command from your project's root di
 wrangler publish
 ```
 
-Wrangler will process your `worker.js` and `wrangler.toml` files, upload them to Cloudflare, and make your application live.
+Wrangler will process your `worker.js` and `index.html` files, upload them to Cloudflare, and make your application live.
 
 Upon successful deployment, Wrangler will output a URL similar to this:
 
@@ -109,11 +102,12 @@ Visit that URL to see your live Arsynox Mail application!
 ```
 arsynox-mail/
 ├── worker.js          # Main Cloudflare Worker script (handles routing, API calls, and serves HTML)
-├── wrangler.toml      # Configuration file for Wrangler (name, entry point, secrets)
+├── index.html         # Frontend HTML file
+├── wrangler.toml      # Configuration file for Wrangler (name, entry point)
 └── README.md          # This file
 ```
 
-The entire frontend (HTML, CSS, JavaScript) is embedded within `worker.js` to simplify deployment and ensure the entire application runs from a single serverless function.
+The entire application is self-contained within the worker, which fetches the `index.html` file and serves it, while also handling the backend API endpoints.
 
 ## 🧪 Local Development
 
@@ -123,11 +117,11 @@ To test your worker locally before deploying:
 wrangler dev
 ```
 
-This will start a local development server, and you can access your application at `http://localhost:8787`.
+This will start a local development server, and you can access your application at `http://localhost:8787/index.html`.
 
 ## 📖 Usage
 
-1.  **Open the App**: Navigate to your deployed `workers.dev` URL.
+1.  **Open the App**: Navigate to your deployed `workers.dev` URL with `/index.html` at the end (e.g., `https://arsynox-mail.your-subdomain.workers.dev/index.html`).
 2.  **Generate Email**: Click the "Generate New Email" button to create a new temporary email address.
 3.  **Copy Address**: Use the "Copy" button to copy the address to your clipboard.
 4.  **Receive Emails**: Send an email to the generated address from any email service.
@@ -151,6 +145,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## 🙏 Acknowledgments
 
 -   [Cloudflare Workers](https://workers.cloudflare.com/) for the powerful serverless platform.
--   [MailSlurp](https://www.mailslurp.com/) for providing the robust temporary email API.
+-   [api.mail.tm](https://api.mail.tm/) for providing the free and easy-to-use temporary email API.
 -   [Tailwind CSS](https://tailwindcss.com/) for the excellent utility-first CSS framework.
 -   [Heroicons](https://heroicons.com/) for the beautiful SVG icons.
