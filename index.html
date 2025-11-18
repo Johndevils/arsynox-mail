@@ -42,21 +42,9 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .progress-ring {
-            transform: rotate(-90deg);
-        }
-        .progress-ring-circle {
-            transition: stroke-dashoffset 0.35s;
-            stroke: #10b981;
-            stroke-dasharray: 283;
-            stroke-dashoffset: 0;
-        }
-        .warning-text {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -91,30 +79,6 @@
                         </div>
                     </div>
 
-                    <!-- Time Remaining Section -->
-                    <div class="mb-4 p-4 bg-white/10 rounded-lg">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium">Time Remaining</span>
-                            <div class="relative w-12 h-12">
-                                <svg class="progress-ring w-12 h-12">
-                                    <circle class="text-white/20" stroke="currentColor" stroke-width="3" fill="transparent" r="45" cx="24" cy="24"></circle>
-                                    <circle id="progressCircle" class="progress-ring-circle" stroke-width="3" fill="transparent" r="45" cx="24" cy="24"></circle>
-                                </svg>
-                                <span id="timePercent" class="absolute inset-0 flex items-center justify-center text-xs font-bold">100%</span>
-                            </div>
-                        </div>
-                        <div id="timeRemaining" class="text-2xl font-bold text-center mb-2">--:--:--</div>
-                        <div id="timeWarning" class="hidden text-sm text-yellow-300 text-center warning-text">
-                            <i class="fas fa-exclamation-triangle mr-1"></i> Email will expire soon!
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <button id="extendTimeBtn" class="w-full bg-green-600 hover:bg-green-700 py-2 px-4 rounded-lg transition flex items-center justify-center">
-                            <i class="fas fa-clock mr-2"></i> Extend Time (10 min)
-                        </button>
-                    </div>
-
                     <div class="mb-4">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm">Auto-refresh</span>
@@ -142,14 +106,22 @@
                         <i class="fas fa-plus mr-2"></i> Generate New Email
                     </button>
 
+                    <!-- Email Lifetime Extension -->
+                    <div class="mt-4 pt-4 border-t border-white/20 text-center">
+                        <p class="text-sm text-white/80">This email session expires in:</p>
+                        <div id="timerDisplay" class="text-2xl font-bold my-2 text-white">10:00</div>
+                        <button id="extendTimeBtn" class="w-full bg-blue-500 hover:bg-blue-600 py-2 px-4 rounded-lg transition flex items-center justify-center">
+                            <i class="fas fa-clock mr-2"></i> Add 10 minutes
+                        </button>
+                    </div>
+
                     <div class="mt-6 pt-6 border-t border-white/20">
                         <h3 class="font-medium mb-3">How to use</h3>
                         <ol class="text-sm space-y-2 text-white/80">
                             <li>1. Your temporary email is generated automatically</li>
                             <li>2. Use it to register on websites, newsletters, etc.</li>
                             <li>3. Check your inbox here for incoming emails</li>
-                            <li>4. Extend time if you need more duration</li>
-                            <li>5. Emails are deleted after expiration</li>
+                            <li>4. Emails are deleted after a certain time</li>
                         </ol>
                     </div>
                 </div>
@@ -169,7 +141,7 @@
 
                     <div id="emptyState" class="hidden text-center py-10">
                         <i class="fas fa-inbox text-6xl mb-4 text-white/30"></i>
-                        <p class="text-white/60">No emails yet. Your inbox is empty.</p>
+                        <p id="emptyStateMessage" class="text-white/60">No emails yet. Your inbox is empty.</p>
                     </div>
 
                     <div id="emailList" class="space-y-3 max-h-96 overflow-y-auto">
@@ -204,7 +176,7 @@
                     </div>
 
                     <div class="border-t border-white/20 pt-4">
-                        <div id="detailContent" class="prose prose-invert max-w-none">
+                        <div id="detailContent" class="prose prose-invert max-w-none text-white">
                             <!-- Email content will be loaded here -->
                         </div>
                     </div>
@@ -214,20 +186,18 @@
 
         <!-- Footer -->
         <footer class="text-center mt-12 text-white/70 text-sm">
-            <p>&copy; 2023 Arsynox Mail. Powered by mail.tm API.</p>
+            <p>&copy; 2025 Arsynox Mail.</p>
         </footer>
     </div>
 
     <script>
         // API configuration
         const API_BASE = 'https://api.mail.tm';
+        const EXTEND_DURATION_MS = 10 * 60 * 1000; // 10 minutes
         let currentEmail = null;
         let jwtToken = null;
         let refreshIntervalId = null;
-        let countdownIntervalId = null;
-        let emailExpirationTime = null;
-        const INITIAL_EMAIL_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
-        const EXTEND_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds (changed from 30)
+        let lifetimeIntervalId = null;
 
         // DOM elements
         const emailAddressEl = document.getElementById('emailAddress');
@@ -235,178 +205,133 @@
         const copyNotification = document.getElementById('copyNotification');
         const refreshBtn = document.getElementById('refreshBtn');
         const newEmailBtn = document.getElementById('newEmailBtn');
-        const extendTimeBtn = document.getElementById('extendTimeBtn');
         const emailListEl = document.getElementById('emailList');
         const emailCountEl = document.getElementById('emailCount');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const emptyState = document.getElementById('emptyState');
+        const emptyStateMessage = document.getElementById('emptyStateMessage');
         const emailDetailEl = document.getElementById('emailDetail');
         const closeEmailBtn = document.getElementById('closeEmailBtn');
         const autoRefreshToggle = document.getElementById('autoRefreshToggle');
         const refreshIntervalSelect = document.getElementById('refreshInterval');
-        const timeRemainingEl = document.getElementById('timeRemaining');
-        const timeWarningEl = document.getElementById('timeWarning');
-        const progressCircleEl = document.getElementById('progressCircle');
-        const timePercentEl = document.getElementById('timePercent');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const extendTimeBtn = document.getElementById('extendTimeBtn');
 
         // Initialize the app
         async function init() {
-            await generateNewEmail();
+            const savedAccount = getAccountFromStorage();
+            if (savedAccount && savedAccount.expiresAt > Date.now()) {
+                await loadExistingEmail(savedAccount);
+            } else {
+                await generateNewEmail();
+            }
             setupEventListeners();
             startAutoRefresh();
         }
 
-        // Generate a new random email
+        // --- Account Management ---
+        function saveAccountToStorage(accountDetails) {
+            localStorage.setItem('arsynoxMailAccount', JSON.stringify(accountDetails));
+        }
+
+        function getAccountFromStorage() {
+            const data = localStorage.getItem('arsynoxMailAccount');
+            return data ? JSON.parse(data) : null;
+        }
+
+        function clearAccountFromStorage() {
+            localStorage.removeItem('arsynoxMailAccount');
+        }
+
+        async function loadExistingEmail(account) {
+            currentEmail = account.address;
+            jwtToken = account.token;
+            emailAddressEl.value = currentEmail;
+            startLifetimeTimer(account.expiresAt);
+            await loadMessages();
+        }
+        
         async function generateNewEmail() {
             try {
-                // Get domains
+                emailAddressEl.value = 'Generating...';
+                newEmailBtn.disabled = true;
+
+                // 1. Get available domains
                 const domainsResponse = await fetch(`${API_BASE}/domains`);
+                if (!domainsResponse.ok) throw new Error('Failed to fetch domains');
                 const domainsData = await domainsResponse.json();
                 const domain = domainsData['hydra:member'][0].domain;
 
-                // Generate random username
-                const username = Math.random().toString(36).substring(2, 10);
+                // 2. Create account details
+                const username = Math.random().toString(36).substring(2, 12);
                 currentEmail = `${username}@${domain}`;
-                emailAddressEl.value = currentEmail;
+                const password = `TempP@ss${Math.random().toString(36).substring(2)}`;
 
-                // Create account
+                // 3. Create the account on the server
                 const accountResponse = await fetch(`${API_BASE}/accounts`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        address: currentEmail,
-                        password: 'TempPassword123!'
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({address: currentEmail, password})
                 });
-
                 if (!accountResponse.ok) {
-                    throw new Error('Failed to create account');
+                    const errorData = await accountResponse.json();
+                    throw new Error(`Failed to create account: ${errorData.detail || 'Unknown error'}`);
                 }
+                
+                // **** IMPORTANT FIX: Wait for 1 second for the server to process the new account ****
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // Get JWT token
+                // 4. Get the authentication token for the new account
                 const authResponse = await fetch(`${API_BASE}/token`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        address: currentEmail,
-                        password: 'TempPassword123!'
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({address: currentEmail, password})
                 });
-
                 if (!authResponse.ok) {
-                    throw new Error('Failed to authenticate');
+                    const errorData = await authResponse.json();
+                    throw new Error(`Failed to authenticate: ${errorData.detail || 'Unknown error'}`);
                 }
-
                 const authData = await authResponse.json();
                 jwtToken = authData.token;
 
-                // Set expiration time
-                emailExpirationTime = Date.now() + INITIAL_EMAIL_DURATION;
-                startCountdown();
-
-                // Load messages
+                // 5. Success! Save and update UI
+                emailAddressEl.value = currentEmail;
+                const expiresAt = Date.now() + EXTEND_DURATION_MS;
+                const accountDetails = { address: currentEmail, token: jwtToken, expiresAt }; // Don't save password
+                saveAccountToStorage(accountDetails);
+                
+                startLifetimeTimer(expiresAt);
                 await loadMessages();
+
             } catch (error) {
                 console.error('Error generating email:', error);
-                emailAddressEl.value = 'Error generating email';
+                emailAddressEl.value = 'Failed. Please try again.';
+                handleExpiredSession(); // Put UI in a clean error state
+            } finally {
+                newEmailBtn.disabled = false;
             }
         }
-
-        // Extend email expiration time
-        function extendEmailTime() {
-            if (!emailExpirationTime) return;
-            
-            emailExpirationTime += EXTEND_DURATION;
-            updateCountdown();
-            
-            // Show success feedback
-            extendTimeBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Time Extended!';
-            extendTimeBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-            extendTimeBtn.classList.add('bg-green-500');
-            
-            setTimeout(() => {
-                extendTimeBtn.innerHTML = '<i class="fas fa-clock mr-2"></i> Extend Time (10 min)';
-                extendTimeBtn.classList.remove('bg-green-500');
-                extendTimeBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-            }, 2000);
-        }
-
-        // Start countdown timer
-        function startCountdown() {
-            if (countdownIntervalId) {
-                clearInterval(countdownIntervalId);
-            }
-            
-            updateCountdown();
-            countdownIntervalId = setInterval(updateCountdown, 1000);
-        }
-
-        // Update countdown display
-        function updateCountdown() {
-            if (!emailExpirationTime) return;
-            
-            const now = Date.now();
-            const remaining = emailExpirationTime - now;
-            
-            if (remaining <= 0) {
-                timeRemainingEl.textContent = 'Expired';
-                timePercentEl.textContent = '0%';
-                progressCircleEl.style.strokeDashoffset = '283';
-                timeWarningEl.classList.remove('hidden');
-                timeWarningEl.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Email has expired!';
-                clearInterval(countdownIntervalId);
-                return;
-            }
-            
-            const hours = Math.floor(remaining / (1000 * 60 * 60));
-            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-            
-            timeRemainingEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            // Update progress circle
-            const totalDuration = INITIAL_EMAIL_DURATION;
-            const elapsed = totalDuration - remaining;
-            const progress = Math.min(100, (elapsed / totalDuration) * 100);
-            const offset = 283 - (283 * progress) / 100;
-            progressCircleEl.style.strokeDashoffset = offset;
-            timePercentEl.textContent = `${Math.round(100 - progress)}%`;
-            
-            // Change color based on remaining time
-            if (remaining < 5 * 60 * 1000) { // Less than 5 minutes (adjusted for 10 min extension)
-                progressCircleEl.style.stroke = '#ef4444'; // Red
-                timeWarningEl.classList.remove('hidden');
-            } else if (remaining < 15 * 60 * 1000) { // Less than 15 minutes (adjusted for 10 min extension)
-                progressCircleEl.style.stroke = '#f59e0b'; // Orange
-                timeWarningEl.classList.remove('hidden');
-            } else {
-                progressCircleEl.style.stroke = '#10b981'; // Green
-                timeWarningEl.classList.add('hidden');
-            }
-        }
-
-        // Load messages from the inbox
+        
+        // --- Inbox Functionality ---
         async function loadMessages() {
             if (!jwtToken) return;
+            const account = getAccountFromStorage();
+            if (!account || account.expiresAt <= Date.now()) {
+                handleExpiredSession();
+                return;
+            }
 
             try {
                 loadingIndicator.classList.remove('hidden');
                 emailListEl.innerHTML = '';
                 emptyState.classList.add('hidden');
+                emailDetailEl.classList.add('hidden');
 
                 const response = await fetch(`${API_BASE}/messages`, {
-                    headers: {
-                        'Authorization': `Bearer ${jwtToken}`
-                    }
+                    headers: {'Authorization': `Bearer ${jwtToken}`}
                 });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch messages');
-                }
+                if (!response.ok) throw new Error('Failed to fetch messages');
 
                 const data = await response.json();
                 const messages = data['hydra:member'];
@@ -414,11 +339,11 @@
                 emailCountEl.textContent = `${messages.length} message${messages.length !== 1 ? 's' : ''}`;
 
                 if (messages.length === 0) {
+                    emptyStateMessage.textContent = 'No emails yet. Your inbox is empty.';
                     emptyState.classList.remove('hidden');
                 } else {
-                    messages.forEach(message => {
-                        const messageEl = createMessageElement(message);
-                        emailListEl.appendChild(messageEl);
+                    messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(message => {
+                        emailListEl.appendChild(createMessageElement(message));
                     });
                 }
             } catch (error) {
@@ -428,107 +353,111 @@
             }
         }
 
-        // Create a message element for the list
         function createMessageElement(message) {
             const messageEl = document.createElement('div');
-            messageEl.className = 'mail-item bg-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/20';
-            
+            messageEl.className = 'mail-item bg-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/20 fade-in';
             const date = new Date(message.createdAt).toLocaleString();
-            const from = message.from.address;
+            const from = message.from.name || message.from.address;
             const subject = message.subject || '(No subject)';
             
             messageEl.innerHTML = `
                 <div class="flex justify-between items-start mb-1">
-                    <div class="font-medium truncate flex-1">${from}</div>
+                    <div class="font-medium truncate flex-1" title="${from}">${from}</div>
                     <div class="text-xs text-white/60 ml-2 whitespace-nowrap">${date}</div>
                 </div>
-                <div class="text-sm truncate">${subject}</div>
-            `;
+                <div class="text-sm truncate">${subject}</div>`;
             
             messageEl.addEventListener('click', () => showMessageDetail(message.id));
-            
             return messageEl;
         }
 
-        // Show message detail
         async function showMessageDetail(messageId) {
             try {
                 const response = await fetch(`${API_BASE}/messages/${messageId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${jwtToken}`
-                    }
+                    headers: {'Authorization': `Bearer ${jwtToken}`}
                 });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch message details');
-                }
-
+                if (!response.ok) throw new Error('Failed to fetch message details');
                 const message = await response.json();
                 
-                document.getElementById('detailFrom').textContent = message.from.address;
+                document.getElementById('detailFrom').textContent = `${message.from.name || ''} <${message.from.address}>`;
                 document.getElementById('detailSubject').textContent = message.subject || '(No subject)';
                 document.getElementById('detailDate').textContent = new Date(message.createdAt).toLocaleString();
                 
-                // Display HTML content if available, otherwise plain text
-                if (message.html) {
-                    document.getElementById('detailContent').innerHTML = message.html;
-                } else if (message.text) {
-                    document.getElementById('detailContent').innerHTML = `<pre>${message.text}</pre>`;
+                const contentEl = document.getElementById('detailContent');
+                if (message.html && message.html.length > 0) {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.width = '100%';
+                    iframe.style.height = '400px';
+                    iframe.style.border = 'none';
+                    iframe.style.background = 'white';
+                    iframe.style.borderRadius = '8px';
+                    contentEl.innerHTML = '';
+                    contentEl.appendChild(iframe);
+                    iframe.srcdoc = message.html[0]; // Use srcdoc for security
                 } else {
-                    document.getElementById('detailContent').innerHTML = '<p>No content available</p>';
+                    contentEl.innerHTML = `<pre class="whitespace-pre-wrap">${message.text || 'No content available'}</pre>`;
                 }
                 
                 emailDetailEl.classList.remove('hidden');
-                emailDetailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                emailDetailEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
             } catch (error) {
                 console.error('Error fetching message details:', error);
             }
         }
 
-        // Setup event listeners
-        function setupEventListeners() {
-            copyBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(emailAddressEl.value)
-                    .then(() => {
-                        copyNotification.classList.remove('hidden');
-                        setTimeout(() => {
-                            copyNotification.classList.add('hidden');
-                        }, 2000);
-                    })
-                    .catch(err => {
-                        console.error('Failed to copy email: ', err);
-                    });
-            });
+        // --- Timer and Lifetime ---
+        function startLifetimeTimer(expiresAt) {
+            if (lifetimeIntervalId) clearInterval(lifetimeIntervalId);
+            
+            function updateTimer() {
+                const now = Date.now();
+                const remaining = expiresAt - now;
 
-            refreshBtn.addEventListener('click', loadMessages);
-            newEmailBtn.addEventListener('click', generateNewEmail);
-            extendTimeBtn.addEventListener('click', extendEmailTime);
-            closeEmailBtn.addEventListener('click', () => {
-                emailDetailEl.classList.add('hidden');
-            });
-
-            autoRefreshToggle.addEventListener('change', () => {
-                if (autoRefreshToggle.checked) {
-                    startAutoRefresh();
+                if (remaining <= 0) {
+                    handleExpiredSession();
                 } else {
-                    stopAutoRefresh();
+                    const minutes = Math.floor((remaining / 1000) / 60);
+                    const seconds = Math.floor((remaining / 1000) % 60);
+                    timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    refreshBtn.disabled = false;
+                    extendTimeBtn.disabled = false;
                 }
-            });
-
-            refreshIntervalSelect.addEventListener('change', () => {
-                if (autoRefreshToggle.checked) {
-                    stopAutoRefresh();
-                    startAutoRefresh();
-                }
-            });
+            }
+            updateTimer();
+            lifetimeIntervalId = setInterval(updateTimer, 1000);
         }
 
-        // Auto-refresh functionality
-        function startAutoRefresh() {
-            if (!autoRefreshToggle.checked) return;
+        function extendEmailLifetime() {
+            const account = getAccountFromStorage();
+            if (!account) return;
             
-            const interval = parseInt(refreshIntervalSelect.value);
-            refreshIntervalId = setInterval(loadMessages, interval);
+            const newExpiresAt = (account.expiresAt > Date.now() ? account.expiresAt : Date.now()) + EXTEND_DURATION_MS;
+            account.expiresAt = newExpiresAt;
+            saveAccountToStorage(account);
+            startLifetimeTimer(newExpiresAt);
+        }
+
+        function handleExpiredSession() {
+            clearInterval(lifetimeIntervalId);
+            timerDisplay.textContent = 'Expired';
+            refreshBtn.disabled = true;
+            extendTimeBtn.disabled = true;
+            emailListEl.innerHTML = '';
+            emailCountEl.textContent = '0 messages';
+            emptyStateMessage.textContent = 'Email session has expired. Please generate a new one.';
+            emptyState.classList.remove('hidden');
+            emailDetailEl.classList.add('hidden');
+            stopAutoRefresh();
+        }
+
+        // --- Auto-Refresh ---
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            if (autoRefreshToggle.checked) {
+                const interval = parseInt(refreshIntervalSelect.value);
+                refreshIntervalId = setInterval(loadMessages, interval);
+            }
         }
 
         function stopAutoRefresh() {
@@ -536,6 +465,32 @@
                 clearInterval(refreshIntervalId);
                 refreshIntervalId = null;
             }
+        }
+
+        // --- Event Listeners ---
+        function setupEventListeners() {
+            copyBtn.addEventListener('click', () => {
+                if(emailAddressEl.value && !emailAddressEl.value.includes('...')) {
+                    navigator.clipboard.writeText(emailAddressEl.value).then(() => {
+                        copyNotification.classList.remove('hidden');
+                        setTimeout(() => copyNotification.classList.add('hidden'), 2000);
+                    });
+                }
+            });
+
+            refreshBtn.addEventListener('click', loadMessages);
+            
+            newEmailBtn.addEventListener('click', () => {
+                clearAccountFromStorage();
+                if (lifetimeIntervalId) clearInterval(lifetimeIntervalId);
+                emailDetailEl.classList.add('hidden');
+                generateNewEmail();
+            });
+
+            extendTimeBtn.addEventListener('click', extendEmailLifetime);
+            closeEmailBtn.addEventListener('click', () => emailDetailEl.classList.add('hidden'));
+            autoRefreshToggle.addEventListener('change', startAutoRefresh);
+            refreshIntervalSelect.addEventListener('change', startAutoRefresh);
         }
 
         // Initialize the app when DOM is loaded
