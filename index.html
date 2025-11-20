@@ -3,498 +3,402 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arsynox Mail - Temporary Email Service</title>
+    <title>Arsynox Mail - Temporary Disposable Email</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        /* Custom Scrollbar for Dark Mode */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
         }
-        .mail-item {
-            transition: all 0.3s ease;
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
         }
-        .mail-item:hover {
-            transform: translateX(5px);
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
         }
-        .loading-spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid white;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+        .loader {
+            border-top-color: #3B82F6;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
         }
-        @keyframes spin {
+        @keyframes spinner {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
     </style>
 </head>
-<body class="min-h-screen gradient-bg">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- Header -->
-        <header class="text-center mb-10 fade-in">
-            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">
-                <i class="fas fa-envelope mr-3"></i>Arsynox Mail
-            </h1>
-            <p class="text-white/80 text-lg">Free, secure, and disposable temporary email service</p>
-        </header>
+<body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col">
 
-        <!-- Main Content -->
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Email Address Section -->
-            <section class="lg:col-span-1">
-                <div class="glass-effect rounded-xl p-6 text-white shadow-xl">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fas fa-inbox mr-2"></i> Your Temporary Email
-                    </h2>
-                    
-                    <div class="mb-4">
-                        <div class="flex items-center bg-white/10 rounded-lg p-3">
-                            <input id="emailAddress" type="text" readonly class="bg-transparent flex-1 outline-none" value="Loading...">
-                            <button id="copyBtn" class="ml-2 p-2 hover:bg-white/20 rounded transition">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div id="copyNotification" class="hidden mt-2 text-sm text-green-300">
-                            <i class="fas fa-check-circle mr-1"></i> Email copied to clipboard!
-                        </div>
-                    </div>
+    <!-- Navbar -->
+    <nav class="bg-slate-800 border-b border-slate-700 p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-robot text-blue-500 text-2xl"></i>
+                <h1 class="text-2xl font-bold tracking-wider text-white">ARSYNOX <span class="text-blue-500">MAIL</span></h1>
+            </div>
+            <div class="text-sm text-slate-400 hidden sm:block">
+                Anonymity Protected
+            </div>
+        </div>
+    </nav>
 
-                    <div class="mb-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm">Auto-refresh</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input id="autoRefreshToggle" type="checkbox" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                            </label>
-                        </div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm">Refresh every</span>
-                            <select id="refreshInterval" class="bg-white/10 rounded px-2 py-1 text-sm outline-none">
-                                <option value="5000">5 seconds</option>
-                                <option value="10000" selected>10 seconds</option>
-                                <option value="30000">30 seconds</option>
-                                <option value="60000">1 minute</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button id="refreshBtn" class="w-full bg-white/20 hover:bg-white/30 py-2 px-4 rounded-lg transition flex items-center justify-center">
-                        <i class="fas fa-sync-alt mr-2"></i> Refresh Inbox
-                    </button>
-
-                    <button id="newEmailBtn" class="w-full mt-3 bg-purple-600 hover:bg-purple-700 py-2 px-4 rounded-lg transition flex items-center justify-center">
-                        <i class="fas fa-plus mr-2"></i> Generate New Email
-                    </button>
-
-                    <!-- Email Lifetime Extension -->
-                    <div class="mt-4 pt-4 border-t border-white/20 text-center">
-                        <p class="text-sm text-white/80">This email session expires in:</p>
-                        <div id="timerDisplay" class="text-2xl font-bold my-2 text-white">10:00</div>
-                        <button id="extendTimeBtn" class="w-full bg-blue-500 hover:bg-blue-600 py-2 px-4 rounded-lg transition flex items-center justify-center">
-                            <i class="fas fa-clock mr-2"></i> Add 10 minutes
-                        </button>
-                    </div>
-
-                    <div class="mt-6 pt-6 border-t border-white/20">
-                        <h3 class="font-medium mb-3">How to use</h3>
-                        <ol class="text-sm space-y-2 text-white/80">
-                            <li>1. Your temporary email is generated automatically</li>
-                            <li>2. Use it to register on websites, newsletters, etc.</li>
-                            <li>3. Check your inbox here for incoming emails</li>
-                            <li>4. Emails are deleted after a certain time</li>
-                        </ol>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Inbox Section -->
-            <section class="lg:col-span-2">
-                <div class="glass-effect rounded-xl p-6 text-white shadow-xl">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center justify-between">
-                        <span><i class="fas fa-envelope-open-text mr-2"></i> Inbox</span>
-                        <span id="emailCount" class="text-sm bg-white/20 px-3 py-1 rounded-full">0 messages</span>
-                    </h2>
-
-                    <div id="loadingIndicator" class="flex justify-center py-10">
-                        <div class="loading-spinner"></div>
-                    </div>
-
-                    <div id="emptyState" class="hidden text-center py-10">
-                        <i class="fas fa-inbox text-6xl mb-4 text-white/30"></i>
-                        <p id="emptyStateMessage" class="text-white/60">No emails yet. Your inbox is empty.</p>
-                    </div>
-
-                    <div id="emailList" class="space-y-3 max-h-96 overflow-y-auto">
-                        <!-- Emails will be loaded here -->
-                    </div>
-                </div>
-
-                <!-- Email Detail Section -->
-                <div id="emailDetail" class="hidden glass-effect rounded-xl p-6 text-white shadow-xl mt-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold">
-                            <i class="fas fa-envelope mr-2"></i> Email Details
-                        </h2>
-                        <button id="closeEmailBtn" class="text-white/70 hover:text-white">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
-                    </div>
-
-                    <div class="mb-4">
-                        <div class="mb-2">
-                            <span class="text-sm text-white/70">From:</span>
-                            <p id="detailFrom" class="font-medium"></p>
-                        </div>
-                        <div class="mb-2">
-                            <span class="text-sm text-white/70">Subject:</span>
-                            <p id="detailSubject" class="font-medium"></p>
-                        </div>
-                        <div class="mb-4">
-                            <span class="text-sm text-white/70">Date:</span>
-                            <p id="detailDate" class="font-medium"></p>
-                        </div>
-                    </div>
-
-                    <div class="border-t border-white/20 pt-4">
-                        <div id="detailContent" class="prose prose-invert max-w-none text-white">
-                            <!-- Email content will be loaded here -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Footer -->
-        <footer class="text-center mt-12 text-white/70 text-sm">
-            <p>&copy; 2025 Arsynox Mail.</p>
-        </footer>
-    </div>
-
-    <script>
-        // API configuration
-        const API_BASE = 'https://api.mail.tm';
-        const EXTEND_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-        let currentEmail = null;
-        let jwtToken = null;
-        let refreshIntervalId = null;
-        let lifetimeIntervalId = null;
-
-        // DOM elements
-        const emailAddressEl = document.getElementById('emailAddress');
-        const copyBtn = document.getElementById('copyBtn');
-        const copyNotification = document.getElementById('copyNotification');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const newEmailBtn = document.getElementById('newEmailBtn');
-        const emailListEl = document.getElementById('emailList');
-        const emailCountEl = document.getElementById('emailCount');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const emptyState = document.getElementById('emptyState');
-        const emptyStateMessage = document.getElementById('emptyStateMessage');
-        const emailDetailEl = document.getElementById('emailDetail');
-        const closeEmailBtn = document.getElementById('closeEmailBtn');
-        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
-        const refreshIntervalSelect = document.getElementById('refreshInterval');
-        const timerDisplay = document.getElementById('timerDisplay');
-        const extendTimeBtn = document.getElementById('extendTimeBtn');
-
-        // Initialize the app
-        async function init() {
-            const savedAccount = getAccountFromStorage();
-            if (savedAccount && savedAccount.expiresAt > Date.now()) {
-                await loadExistingEmail(savedAccount);
-            } else {
-                await generateNewEmail();
-            }
-            setupEventListeners();
-            startAutoRefresh();
-        }
-
-        // --- Account Management ---
-        function saveAccountToStorage(accountDetails) {
-            localStorage.setItem('arsynoxMailAccount', JSON.stringify(accountDetails));
-        }
-
-        function getAccountFromStorage() {
-            const data = localStorage.getItem('arsynoxMailAccount');
-            return data ? JSON.parse(data) : null;
-        }
-
-        function clearAccountFromStorage() {
-            localStorage.removeItem('arsynoxMailAccount');
-        }
-
-        async function loadExistingEmail(account) {
-            currentEmail = account.address;
-            jwtToken = account.token;
-            emailAddressEl.value = currentEmail;
-            startLifetimeTimer(account.expiresAt);
-            await loadMessages();
-        }
+    <!-- Main Content -->
+    <main class="container mx-auto flex-grow p-4 max-w-5xl">
         
-        async function generateNewEmail() {
+        <!-- Email Address & Timer Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-6">
+            
+            <!-- Email Display Card -->
+            <div class="md:col-span-2 bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                <h2 class="text-slate-400 text-sm uppercase tracking-wide mb-2 font-semibold">Your Temporary Email Address</h2>
+                
+                <div class="flex items-center gap-2 bg-slate-900 p-3 rounded-lg border border-slate-700">
+                    <input type="text" id="emailDisplay" readonly 
+                        class="bg-transparent w-full text-green-400 font-mono text-lg outline-none truncate"
+                        value="Generating address...">
+                    
+                    <button onclick="copyEmail()" class="p-2 bg-slate-700 hover:bg-slate-600 rounded text-white transition group relative">
+                        <i class="fa-regular fa-copy"></i>
+                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">Copy</span>
+                    </button>
+                </div>
+                
+                <div class="mt-4 flex justify-between items-center">
+                    <button onclick="createNewAccount()" class="text-xs text-slate-500 hover:text-slate-300 underline cursor-pointer">
+                        <i class="fa-solid fa-rotate"></i> Generate New Address
+                    </button>
+                    <span id="status" class="text-xs text-blue-400 font-mono animate-pulse">Connecting...</span>
+                </div>
+            </div>
+
+            <!-- Timer Card -->
+            <div class="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 flex flex-col justify-center items-center relative">
+                <h3 class="text-slate-400 text-xs uppercase mb-2">Session Expires In</h3>
+                <div id="timer" class="text-4xl font-bold text-white font-mono mb-3">10:00</div>
+                <button onclick="extendTime()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-full text-sm font-semibold transition shadow-lg shadow-blue-900/50 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Extend (+10m)
+                </button>
+            </div>
+        </div>
+
+        <!-- Inbox Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+            
+            <!-- Email List -->
+            <div class="lg:col-span-1 bg-slate-800 rounded-xl shadow-lg border border-slate-700 flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+                    <h3 class="font-bold text-white"><i class="fa-solid fa-inbox mr-2"></i> Inbox</h3>
+                    <button onclick="fetchMessages()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-arrows-rotate"></i></button>
+                </div>
+                <div id="emailList" class="overflow-y-auto flex-grow p-2 space-y-2">
+                    <!-- Javascript will populate this -->
+                    <div class="text-center text-slate-500 mt-10 text-sm">
+                        Waiting for incoming emails...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Viewer -->
+            <div class="lg:col-span-2 bg-slate-800 rounded-xl shadow-lg border border-slate-700 flex flex-col overflow-hidden relative">
+                <!-- Placeholder State -->
+                <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 pointer-events-none">
+                    <i class="fa-regular fa-envelope-open text-6xl mb-4 opacity-50"></i>
+                    <p>Select an email to read</p>
+                </div>
+
+                <!-- Email Header Details -->
+                <div id="messageDetails" class="hidden bg-slate-900 p-4 border-b border-slate-700">
+                    <h2 id="msgSubject" class="text-lg font-bold text-white mb-1">Subject</h2>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs text-slate-400">From: <span id="msgFrom" class="text-slate-200">sender</span></p>
+                            <p class="text-xs text-slate-400">To: <span id="msgTo" class="text-slate-200">me</span></p>
+                        </div>
+                        <p id="msgDate" class="text-xs text-slate-500">Date</p>
+                    </div>
+                </div>
+
+                <!-- Email Body Iframe -->
+                <div class="flex-grow bg-white relative w-full h-full">
+                    <iframe id="messageFrame" class="w-full h-full border-none"></iframe>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-center p-6 text-slate-600 text-sm">
+        &copy; 2025 Arsynox Mail. Powered by Mail.tm API.
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Configuration
+        const API_BASE = 'https://api.mail.tm';
+        let account = null;
+        let token = null;
+        let refreshInterval = null;
+        
+        // Timer Logic
+        let timeLeft = 600; // 10 minutes in seconds
+        let timerInterval = null;
+
+        // DOM Elements
+        const emailInput = document.getElementById('emailDisplay');
+        const statusSpan = document.getElementById('status');
+        const emailListEl = document.getElementById('emailList');
+        const timerDisplay = document.getElementById('timer');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAccountFromStorage();
+            startTimer();
+        });
+
+        function startTimer() {
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    clearInterval(refreshInterval); // Stop polling
+                    timerDisplay.innerText = "EXPIRED";
+                    statusSpan.innerText = "Session Expired";
+                    statusSpan.className = "text-xs text-red-500 font-mono";
+                    return;
+                }
+                timeLeft--;
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                timerDisplay.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            }, 1000);
+        }
+
+        function extendTime() {
+            timeLeft = 600; // Reset to 10 mins
+            // If polling stopped, restart it
+            if(account && token && (!refreshInterval || timeLeft <= 0)) {
+                statusSpan.innerText = "Live Polling";
+                statusSpan.className = "text-xs text-green-400 font-mono animate-pulse";
+                startPolling();
+            }
+            startTimer(); // Ensure timer is running
+        }
+
+        // --- API Interaction ---
+
+        async function loadAccountFromStorage() {
+            const storedAccount = localStorage.getItem('arsynox_account');
+            const storedToken = localStorage.getItem('arsynox_token');
+
+            if (storedAccount && storedToken) {
+                account = JSON.parse(storedAccount);
+                token = storedToken;
+                emailInput.value = account.address;
+                statusSpan.innerText = "Live Polling";
+                statusSpan.className = "text-xs text-green-400 font-mono animate-pulse";
+                fetchMessages();
+                startPolling();
+            } else {
+                createNewAccount();
+            }
+        }
+
+        async function createNewAccount() {
+            statusSpan.innerText = "Creating ID...";
+            statusSpan.className = "text-xs text-yellow-400 font-mono";
+            
+            // Reset UI
+            emailInput.value = "Generating...";
+            emailListEl.innerHTML = '<div class="text-center text-slate-500 mt-10 text-sm">Waiting for incoming emails...</div>';
+            document.getElementById('messageDetails').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('messageFrame').src = 'about:blank';
+
             try {
-                emailAddressEl.value = 'Generating...';
-                newEmailBtn.disabled = true;
-
-                // 1. Get available domains
-                const domainsResponse = await fetch(`${API_BASE}/domains`);
-                if (!domainsResponse.ok) throw new Error('Failed to fetch domains');
-                const domainsData = await domainsResponse.json();
-                const domain = domainsData['hydra:member'][0].domain;
-
-                // 2. Create account details
-                const username = Math.random().toString(36).substring(2, 12);
-                currentEmail = `${username}@${domain}`;
-                const password = `TempP@ss${Math.random().toString(36).substring(2)}`;
-
-                // 3. Create the account on the server
-                const accountResponse = await fetch(`${API_BASE}/accounts`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({address: currentEmail, password})
-                });
-                if (!accountResponse.ok) {
-                    const errorData = await accountResponse.json();
-                    throw new Error(`Failed to create account: ${errorData.detail || 'Unknown error'}`);
-                }
+                // 1. Get Domain
+                const domainRes = await fetch(`${API_BASE}/domains`);
+                const domains = await domainRes.json();
+                if(!domains['hydra:member'] || domains['hydra:member'].length === 0) throw new Error("No domains available");
                 
-                // **** IMPORTANT FIX: Wait for 1 second for the server to process the new account ****
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const domain = domains['hydra:member'][0].domain;
 
-                // 4. Get the authentication token for the new account
-                const authResponse = await fetch(`${API_BASE}/token`, {
+                // 2. Create Credentials
+                const username = 'arsynox_' + Math.random().toString(36).substring(2, 10);
+                const password = Math.random().toString(36).substring(2, 15);
+                const address = `${username}@${domain}`;
+
+                // 3. Register
+                const regRes = await fetch(`${API_BASE}/accounts`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({address: currentEmail, password})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address, password })
                 });
-                if (!authResponse.ok) {
-                    const errorData = await authResponse.json();
-                    throw new Error(`Failed to authenticate: ${errorData.detail || 'Unknown error'}`);
-                }
-                const authData = await authResponse.json();
-                jwtToken = authData.token;
 
-                // 5. Success! Save and update UI
-                emailAddressEl.value = currentEmail;
-                const expiresAt = Date.now() + EXTEND_DURATION_MS;
-                const accountDetails = { address: currentEmail, token: jwtToken, expiresAt }; // Don't save password
-                saveAccountToStorage(accountDetails);
+                if(!regRes.ok) throw new Error("Registration failed");
+                const accData = await regRes.json();
+
+                // 4. Login (Get Token)
+                const tokenRes = await fetch(`${API_BASE}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address, password })
+                });
                 
-                startLifetimeTimer(expiresAt);
-                await loadMessages();
+                if(!tokenRes.ok) throw new Error("Login failed");
+                const tokenData = await tokenRes.json();
+
+                // Save State
+                account = accData;
+                token = tokenData.token;
+                localStorage.setItem('arsynox_account', JSON.stringify(account));
+                localStorage.setItem('arsynox_token', token);
+
+                // Update UI
+                emailInput.value = account.address;
+                statusSpan.innerText = "Live Polling";
+                statusSpan.className = "text-xs text-green-400 font-mono animate-pulse";
+
+                // Reset Timer
+                timeLeft = 600;
+                startTimer();
+                startPolling();
 
             } catch (error) {
-                console.error('Error generating email:', error);
-                emailAddressEl.value = 'Failed. Please try again.';
-                handleExpiredSession(); // Put UI in a clean error state
-            } finally {
-                newEmailBtn.disabled = false;
+                console.error(error);
+                statusSpan.innerText = "Error. Try again.";
+                statusSpan.className = "text-xs text-red-500 font-mono";
             }
         }
-        
-        // --- Inbox Functionality ---
-        async function loadMessages() {
-            if (!jwtToken) return;
-            const account = getAccountFromStorage();
-            if (!account || account.expiresAt <= Date.now()) {
-                handleExpiredSession();
+
+        function startPolling() {
+            if(refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                if(token && timeLeft > 0) fetchMessages();
+            }, 5000); // Poll every 5 seconds
+        }
+
+        async function fetchMessages() {
+            if (!token) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/messages?page=1`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                renderEmailList(data['hydra:member']);
+            } catch (error) {
+                console.error("Fetch error", error);
+            }
+        }
+
+        function renderEmailList(messages) {
+            if(!messages || messages.length === 0) {
+                if(emailListEl.children.length === 0 || emailListEl.innerHTML.includes("Waiting")) {
+                     emailListEl.innerHTML = '<div class="text-center text-slate-500 mt-10 text-sm"><i class="fa-regular fa-paper-plane mb-2 block"></i>Inbox empty</div>';
+                }
                 return;
             }
 
-            try {
-                loadingIndicator.classList.remove('hidden');
-                emailListEl.innerHTML = '';
-                emptyState.classList.add('hidden');
-                emailDetailEl.classList.add('hidden');
+            // Simple check to avoid re-rendering if nothing changed (optimization)
+            // For simplicity in this file, we wipe and rebuild, but in production use IDs
+            emailListEl.innerHTML = ''; 
 
-                const response = await fetch(`${API_BASE}/messages`, {
-                    headers: {'Authorization': `Bearer ${jwtToken}`}
+            messages.forEach(msg => {
+                const isSeen = msg.seen ? 'opacity-60' : 'font-semibold border-l-4 border-blue-500';
+                
+                const el = document.createElement('div');
+                el.className = `bg-slate-700 hover:bg-slate-600 p-3 rounded cursor-pointer transition ${isSeen}`;
+                el.onclick = () => loadMessage(msg.id, msg.from.name || msg.from.address, msg.subject, msg.createdAt);
+                
+                // Format time
+                const date = new Date(msg.createdAt);
+                const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                el.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-sm text-white truncate w-2/3">${msg.from.name || msg.from.address}</span>
+                        <span class="text-xs text-slate-400">${timeStr}</span>
+                    </div>
+                    <div class="text-sm text-slate-300 truncate">${msg.subject || '(No Subject)'}</div>
+                    <div class="text-xs text-slate-500 mt-1 truncate">${msg.intro || '...'}</div>
+                `;
+                emailListEl.appendChild(el);
+            });
+        }
+
+        async function loadMessage(id, from, subject, date) {
+            // UI Updates
+            document.getElementById('emptyState').classList.add('hidden');
+            const details = document.getElementById('messageDetails');
+            details.classList.remove('hidden');
+            
+            document.getElementById('msgSubject').innerText = subject || '(No Subject)';
+            document.getElementById('msgFrom').innerText = from;
+            document.getElementById('msgTo').innerText = account.address;
+            document.getElementById('msgDate').innerText = new Date(date).toLocaleString();
+
+            // Show loader in iframe area temporarily
+            // (Skipped for simplicity, keeping old content until loaded)
+
+            try {
+                const res = await fetch(`${API_BASE}/messages/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                // Prefer HTML, fallback to text
+                const content = data.html && data.html.length > 0 ? data.html : `<pre>${data.text}</pre>`;
+                
+                const iframe = document.getElementById('messageFrame');
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <style>
+                        body { font-family: sans-serif; padding: 20px; color: #333; }
+                        a { color: #2563eb; }
+                    </style>
+                    ${content}
+                `);
+                doc.close();
+
+                // Mark as seen (API call)
+                fetch(`${API_BASE}/messages/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/merge-patch+json'
+                    },
+                    body: JSON.stringify({ seen: true })
                 });
 
-                if (!response.ok) throw new Error('Failed to fetch messages');
-
-                const data = await response.json();
-                const messages = data['hydra:member'];
-
-                emailCountEl.textContent = `${messages.length} message${messages.length !== 1 ? 's' : ''}`;
-
-                if (messages.length === 0) {
-                    emptyStateMessage.textContent = 'No emails yet. Your inbox is empty.';
-                    emptyState.classList.remove('hidden');
-                } else {
-                    messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(message => {
-                        emailListEl.appendChild(createMessageElement(message));
-                    });
-                }
             } catch (error) {
-                console.error('Error loading messages:', error);
-            } finally {
-                loadingIndicator.classList.add('hidden');
+                console.error(error);
             }
         }
 
-        function createMessageElement(message) {
-            const messageEl = document.createElement('div');
-            messageEl.className = 'mail-item bg-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/20 fade-in';
-            const date = new Date(message.createdAt).toLocaleString();
-            const from = message.from.name || message.from.address;
-            const subject = message.subject || '(No subject)';
+        function copyEmail() {
+            const copyText = document.getElementById("emailDisplay");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(copyText.value);
             
-            messageEl.innerHTML = `
-                <div class="flex justify-between items-start mb-1">
-                    <div class="font-medium truncate flex-1" title="${from}">${from}</div>
-                    <div class="text-xs text-white/60 ml-2 whitespace-nowrap">${date}</div>
-                </div>
-                <div class="text-sm truncate">${subject}</div>`;
-            
-            messageEl.addEventListener('click', () => showMessageDetail(message.id));
-            return messageEl;
+            // Visual feedback handled by CSS hover group mostly, but let's alert briefly
+            const btn = document.querySelector("button i.fa-copy").parentElement;
+            const originalBg = btn.className;
+            btn.classList.remove("bg-slate-700");
+            btn.classList.add("bg-green-600");
+            setTimeout(() => {
+                btn.classList.remove("bg-green-600");
+                btn.classList.add("bg-slate-700");
+            }, 500);
         }
-
-        async function showMessageDetail(messageId) {
-            try {
-                const response = await fetch(`${API_BASE}/messages/${messageId}`, {
-                    headers: {'Authorization': `Bearer ${jwtToken}`}
-                });
-
-                if (!response.ok) throw new Error('Failed to fetch message details');
-                const message = await response.json();
-                
-                document.getElementById('detailFrom').textContent = `${message.from.name || ''} <${message.from.address}>`;
-                document.getElementById('detailSubject').textContent = message.subject || '(No subject)';
-                document.getElementById('detailDate').textContent = new Date(message.createdAt).toLocaleString();
-                
-                const contentEl = document.getElementById('detailContent');
-                if (message.html && message.html.length > 0) {
-                    const iframe = document.createElement('iframe');
-                    iframe.style.width = '100%';
-                    iframe.style.height = '400px';
-                    iframe.style.border = 'none';
-                    iframe.style.background = 'white';
-                    iframe.style.borderRadius = '8px';
-                    contentEl.innerHTML = '';
-                    contentEl.appendChild(iframe);
-                    iframe.srcdoc = message.html[0]; // Use srcdoc for security
-                } else {
-                    contentEl.innerHTML = `<pre class="whitespace-pre-wrap">${message.text || 'No content available'}</pre>`;
-                }
-                
-                emailDetailEl.classList.remove('hidden');
-                emailDetailEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            } catch (error) {
-                console.error('Error fetching message details:', error);
-            }
-        }
-
-        // --- Timer and Lifetime ---
-        function startLifetimeTimer(expiresAt) {
-            if (lifetimeIntervalId) clearInterval(lifetimeIntervalId);
-            
-            function updateTimer() {
-                const now = Date.now();
-                const remaining = expiresAt - now;
-
-                if (remaining <= 0) {
-                    handleExpiredSession();
-                } else {
-                    const minutes = Math.floor((remaining / 1000) / 60);
-                    const seconds = Math.floor((remaining / 1000) % 60);
-                    timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    refreshBtn.disabled = false;
-                    extendTimeBtn.disabled = false;
-                }
-            }
-            updateTimer();
-            lifetimeIntervalId = setInterval(updateTimer, 1000);
-        }
-
-        function extendEmailLifetime() {
-            const account = getAccountFromStorage();
-            if (!account) return;
-            
-            const newExpiresAt = (account.expiresAt > Date.now() ? account.expiresAt : Date.now()) + EXTEND_DURATION_MS;
-            account.expiresAt = newExpiresAt;
-            saveAccountToStorage(account);
-            startLifetimeTimer(newExpiresAt);
-        }
-
-        function handleExpiredSession() {
-            clearInterval(lifetimeIntervalId);
-            timerDisplay.textContent = 'Expired';
-            refreshBtn.disabled = true;
-            extendTimeBtn.disabled = true;
-            emailListEl.innerHTML = '';
-            emailCountEl.textContent = '0 messages';
-            emptyStateMessage.textContent = 'Email session has expired. Please generate a new one.';
-            emptyState.classList.remove('hidden');
-            emailDetailEl.classList.add('hidden');
-            stopAutoRefresh();
-        }
-
-        // --- Auto-Refresh ---
-        function startAutoRefresh() {
-            stopAutoRefresh();
-            if (autoRefreshToggle.checked) {
-                const interval = parseInt(refreshIntervalSelect.value);
-                refreshIntervalId = setInterval(loadMessages, interval);
-            }
-        }
-
-        function stopAutoRefresh() {
-            if (refreshIntervalId) {
-                clearInterval(refreshIntervalId);
-                refreshIntervalId = null;
-            }
-        }
-
-        // --- Event Listeners ---
-        function setupEventListeners() {
-            copyBtn.addEventListener('click', () => {
-                if(emailAddressEl.value && !emailAddressEl.value.includes('...')) {
-                    navigator.clipboard.writeText(emailAddressEl.value).then(() => {
-                        copyNotification.classList.remove('hidden');
-                        setTimeout(() => copyNotification.classList.add('hidden'), 2000);
-                    });
-                }
-            });
-
-            refreshBtn.addEventListener('click', loadMessages);
-            
-            newEmailBtn.addEventListener('click', () => {
-                clearAccountFromStorage();
-                if (lifetimeIntervalId) clearInterval(lifetimeIntervalId);
-                emailDetailEl.classList.add('hidden');
-                generateNewEmail();
-            });
-
-            extendTimeBtn.addEventListener('click', extendEmailLifetime);
-            closeEmailBtn.addEventListener('click', () => emailDetailEl.classList.add('hidden'));
-            autoRefreshToggle.addEventListener('change', startAutoRefresh);
-            refreshIntervalSelect.addEventListener('change', startAutoRefresh);
-        }
-
-        // Initialize the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
