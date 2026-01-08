@@ -1,0 +1,46 @@
+body {
+  margin: 0;
+  background: #000;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+}
+.container {
+  max-width: 420px;
+  margin: auto;
+  padding: 20px;
+}
+.logo {
+  width: 64px;
+  display: block;
+  margin: 20px auto;
+}
+.card {
+  background: #111;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.email {
+  font-family: monospace;
+  word-break: break-all;
+}
+.timer {
+  opacity: .7;
+  margin: 8px 0;
+}
+button {
+  background: #2563eb;
+  border: none;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.msg {
+  border-top: 1px solid #222;
+  padding: 8px 0;
+}
+footer {
+  text-align: center;
+  opacity: .5;
+  font-size: 12px;
+}
