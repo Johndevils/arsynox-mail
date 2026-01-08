@@ -20,7 +20,7 @@ jobs:
           persist-credentials: true
 
       - name: Unzip ZIP
-        run: unzip -o arsymail.zip -d 
+        run: unzip -o arsymail.zip  
 
       - name: Commit 
         run: |
