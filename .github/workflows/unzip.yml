@@ -20,13 +20,13 @@ jobs:
           persist-credentials: true
 
       - name: Unzip ZIP
-        run: unzip -o arsymail.zip  
+        run: unzip -o arsymail.zip -d code
 
-      - name: Commit 
+      - name: Commit code
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add 
+          git add code
           git commit -m "Auto: unzip arsymail.zip" || echo "Nothing to commit"
           git push
