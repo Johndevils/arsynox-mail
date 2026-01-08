@@ -1,9 +1,10 @@
-name: Unzip ZIP File
+name: Unzip ZIP File and Commit
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   unzip:
@@ -12,6 +13,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Show files before unzip
         run: ls -la
@@ -22,3 +25,12 @@ jobs:
 
       - name: Show files after unzip
         run: ls -la extracted
+
+      - name: Commit extracted files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add extracted
+          git commit -m "Auto: unzip arsynox-mail-cloudflare.zip" || echo "Nothing to commit"
+          git push
