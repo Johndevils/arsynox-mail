@@ -1,0 +1,15 @@
+# Cloudflare Pages Configuration for Next.js 15
+
+name = "arsynox-mail"
+compatibility_date = "2024-01-01"
+
+# Environment variables (configure in Cloudflare Dashboard or CLI)
+# You can set these in the Cloudflare dashboard:
+# Settings > Functions > Environment variables
+
+[build]
+# Build output directory (auto-detected by Cloudflare)
+
+[vars]
+# Add any environment variables here if needed
+# NODE_VERSION = "18"
