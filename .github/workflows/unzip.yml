@@ -20,13 +20,13 @@ jobs:
           persist-credentials: true
 
       - name: Unzip ZIP
-        run: unzip -o arsynox-mail-cloudflare.zip -d extracted
+        run: unzip -o arsymail.zip -d 
 
-      - name: Commit extracted files
+      - name: Commit 
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add extracted
-          git commit -m "Auto: unzip arsynox-mail-cloudflare.zip" || echo "Nothing to commit"
+          git add 
+          git commit -m "Auto: unzip arsymail.zip" || echo "Nothing to commit"
           git push
