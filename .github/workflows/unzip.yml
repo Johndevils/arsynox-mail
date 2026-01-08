@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   unzip:
     runs-on: ubuntu-latest
@@ -16,20 +19,14 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Show files before unzip
-        run: ls -la
+      - name: Unzip ZIP
+        run: unzip -o arsynox-mail-cloudflare.zip -d extracted
 
-      - name: Unzip arsynox-mail-cloudflare.zip
-        run: |
-          unzip -o arsynox-mail-cloudflare.zip -d extract
-
-      - name: Show files after unzip
-        run: ls -la extract 
-      - name: Commit extract files
+      - name: Commit extracted files
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add extract
+          git add extracted
           git commit -m "Auto: unzip arsynox-mail-cloudflare.zip" || echo "Nothing to commit"
           git push
