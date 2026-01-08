@@ -1,0 +1,24 @@
+name: Unzip ZIP File
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show files before unzip
+        run: ls -la
+
+      - name: Unzip arsynox-mail-cloudflare.zip
+        run: |
+          unzip -o arsynox-mail-cloudflare.zip -d extracted
+
+      - name: Show files after unzip
+        run: ls -la extracted
