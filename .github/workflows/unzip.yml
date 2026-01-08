@@ -21,16 +21,15 @@ jobs:
 
       - name: Unzip arsynox-mail-cloudflare.zip
         run: |
-          unzip -o arsynox-mail-cloudflare.zip -d src
+          unzip -o arsynox-mail-cloudflare.zip -d extract
 
       - name: Show files after unzip
-        run: ls -la src
-
-      - name: Commit src files
+        run: ls -la extract 
+      - name: Commit extract files
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add src
+          git add extract
           git commit -m "Auto: unzip arsynox-mail-cloudflare.zip" || echo "Nothing to commit"
           git push
